@@ -1,0 +1,26 @@
+# Environment variables (Sensitive secrets)
+.env
+.env.local
+
+# Databases
+data/*.db
+data/*.sqlite
+*.db
+*.sqlite
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

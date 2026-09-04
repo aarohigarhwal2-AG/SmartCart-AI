@@ -1,0 +1,16 @@
+id,name,category,description,price,stock,tags
+P101,Wireless Ergonomic Keyboard,Keyboards,Compact wireless keyboard with quiet membrane keys and wrist comfort,1499,20,office;keyboard;wireless;work-from-home
+P102,Wireless Optical Mouse,Mice,Ergonomic 1600 DPI wireless mouse with silent clicks,799,30,office;mouse;wireless;work-from-home
+P103,Adjustable Aluminium Laptop Stand,Stands,Foldable heat-dissipating aluminium stand with 6 elevation levels,1299,15,work-from-home;stand;laptop;ergonomic
+P104,USB-C 4-Port Fast Hub,Accessories,High speed 4-in-1 multi-port adapter with 5Gbps transfer rate,699,25,laptop;accessory;usb;hub
+P105,1080p Full HD Webcam with Mic,Cameras,Clear 1080p webcam with auto-light correction and noise-reducing mic,1899,12,video-call;camera;webcam;work-from-home
+P106,Noise Cancelling Headset,Audio,Lightweight USB headset with flip-to-mute mic and deep audio,2199,18,audio;headset;microphone;office;work-from-home
+P107,Large PU Leather Desk Mat,Accessories,Waterproof smooth desk pad (80x40cm) for keyboard and mouse,599,40,desk;mat;accessory;office
+P108,Mechanical RGB Backlit Keyboard,Keyboards,Durable mechanical keyboard with tactile blue switches and custom backlight,2499,8,keyboard;mechanical;rgb;gaming;office
+P109,Dual Mode Rechargeable Bluetooth Mouse,Mice,Rechargeable Bluetooth and 2.4G dual mode mouse with USB-C charging,1199,22,mouse;bluetooth;wireless;rechargeable
+P110,Dimmable LED Desk Lamp,Lighting,Eye-caring touch control desk lamp with 3 color modes and USB charging port,999,14,lighting;lamp;desk;work-from-home
+P111,Ergonomic Memory Foam Wrist Rest,Accessories,Soft memory foam wrist rest support for keyboard and typing comfort,499,35,wrist-rest;ergonomic;keyboard;accessory
+P112,Laptop Privacy Screen Filter 14-inch,Accessories,Anti-glare and privacy filter for 14-inch laptop screens,1199,0,laptop;privacy;screen;accessory
+P113,Smart Cable Management Box Organizer,Accessories,Flame-retardant cable hideaway organizer for clean desk setup,649,20,cable;organizer;desk;clean
+P114,Vertical Ergonomic Wireless Mouse,Mice,Natural handshake angle vertical mouse to reduce wrist strain,1599,10,mouse;vertical;ergonomic;wireless
+P115,Laptop Cooling Pad with Dual Fans,Stands,Slim cooling pad with silent LED fans and dual USB ports,899,16,laptop;cooling;stand;accessory
