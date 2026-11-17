@@ -39,9 +39,17 @@ def init_db():
                 currency TEXT NOT NULL DEFAULT 'INR',
                 stock INTEGER NOT NULL,
                 tags TEXT NOT NULL,
+                image_url TEXT,
                 created_at TEXT NOT NULL
             );
         """)
+        
+        # Safe migration if image_url does not exist on existing databases
+        cursor.execute("PRAGMA table_info(products)")
+        product_columns = [col[1] for col in cursor.fetchall()]
+        if "image_url" not in product_columns:
+            cursor.execute("ALTER TABLE products ADD COLUMN image_url TEXT;")
+
         
         # Carts table
         cursor.execute("""

@@ -1,12 +1,22 @@
 // SmartCart AI Frontend Application Logic
 
+const DEFAULT_IMG = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80";
+
 const STATE = {
   sessionId: "session_" + Math.random().toString(36).substring(2, 9),
   cartId: localStorage.getItem("smartcart_active_cart_id") || null,
   activeTab: "catalog",
   products: [],
-  cart: null
+  cart: null,
+  catalogView: "grid",
+  selectedCategory: "all",
+  currentQvProduct: null
 };
+
+function handleImgError(img) {
+  img.onerror = null;
+  img.src = DEFAULT_IMG;
+}
 
 // Toast notification helper
 function showToast(msg, duration = 3000) {
@@ -70,33 +80,121 @@ function updateCatalogStats(products) {
   document.getElementById("statCategories").textContent = categories;
 }
 
+function setCatalogView(view) {
+  STATE.catalogView = view;
+  const btnGrid = document.getElementById("btnViewGrid");
+  const btnTable = document.getElementById("btnViewTable");
+  const gridView = document.getElementById("catalogGridView");
+  const tableView = document.getElementById("catalogTableView");
+
+  if (view === "grid") {
+    btnGrid.classList.add("active");
+    btnTable.classList.remove("active");
+    gridView.style.display = "grid";
+    tableView.style.display = "none";
+  } else {
+    btnTable.classList.add("active");
+    btnGrid.classList.remove("active");
+    gridView.style.display = "none";
+    tableView.style.display = "block";
+  }
+}
+
+function filterByCategory(category) {
+  STATE.selectedCategory = category;
+  document.querySelectorAll(".category-chip").forEach(chip => {
+    if (chip.textContent.toLowerCase().includes(category.toLowerCase()) || 
+       (category === "all" && chip.textContent.includes("All"))) {
+      chip.classList.add("active");
+    } else {
+      chip.classList.remove("active");
+    }
+  });
+  filterCatalogTable();
+}
+
 function renderCatalogTable(products) {
-  const tbody = document.getElementById("catalogTableBody");
+  renderCatalogGrid(products);
+  renderCatalogTableView(products);
+}
+
+function renderCatalogGrid(products) {
+  const container = document.getElementById("catalogGridView");
   if (!products || products.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:2rem;">No products found. Upload a CSV or click "Load 15-Item Sample".</td></tr>`;
+    container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+      <p style="font-size:2rem; margin-bottom:0.5rem;">🔍</p>
+      <p style="font-weight:600;">No products match your filter criteria.</p>
+    </div>`;
     return;
   }
 
-  tbody.innerHTML = products.map(p => `
-    <tr>
-      <td><span style="font-family:monospace; font-weight:600; color:var(--primary);">${p.id}</span></td>
-      <td style="font-weight:600;">${escapeHtml(p.name)}</td>
-      <td><span class="badge badge-primary">${escapeHtml(p.category)}</span></td>
-      <td style="font-size:0.8rem; color:var(--text-muted); max-width:280px;">${escapeHtml(p.description)}</td>
-      <td style="font-weight:700; color:var(--text-main);">₹${p.price.toLocaleString("en-IN")}</td>
-      <td>
-        ${p.stock > 0 
-          ? `<span class="badge badge-success">In Stock (${p.stock})</span>` 
-          : `<span class="badge badge-danger">Out of Stock (0)</span>`}
-      </td>
-      <td style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(p.tags)}</td>
-    </tr>
-  `).join("");
+  container.innerHTML = products.map(p => {
+    const imgUrl = p.image_url || DEFAULT_IMG;
+    const inStock = p.stock > 0;
+    return `
+      <div class="prod-grid-card">
+        <div class="prod-img-box" onclick="openQuickView('${p.id}')">
+          <img src="${imgUrl}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="handleImgError(this)">
+          <span class="prod-stock-badge ${inStock ? 'badge-in-stock' : 'badge-out-stock'}">
+            ${inStock ? `In Stock (${p.stock})` : 'Out of Stock'}
+          </span>
+          <span class="prod-quickview-tag">👁️ Quick View</span>
+        </div>
+        <div class="prod-card-body">
+          <span class="prod-card-category">${escapeHtml(p.category)}</span>
+          <h4 class="prod-card-title" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</h4>
+          <p class="prod-card-desc">${escapeHtml(p.description)}</p>
+          <div class="prod-card-footer">
+            <span class="prod-card-price">₹${p.price.toLocaleString("en-IN")}</span>
+            <button class="btn btn-primary btn-sm" ${!inStock ? 'disabled style="opacity:0.6;"' : ''} onclick="addItemToCart('${p.id}', '${escapeHtml(p.name)}')">
+              ${inStock ? '+ Add' : 'Sold Out'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderCatalogTableView(products) {
+  const tbody = document.getElementById("catalogTableBody");
+  if (!products || products.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:2rem;">No products found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = products.map(p => {
+    const imgUrl = p.image_url || DEFAULT_IMG;
+    const inStock = p.stock > 0;
+    return `
+      <tr>
+        <td>
+          <img src="${imgUrl}" alt="${escapeHtml(p.name)}" class="table-prod-thumb" onerror="handleImgError(this)" onclick="openQuickView('${p.id}')">
+        </td>
+        <td><span style="font-family:monospace; font-weight:600; color:var(--primary);">${p.id}</span></td>
+        <td style="font-weight:600; cursor:pointer;" onclick="openQuickView('${p.id}')">${escapeHtml(p.name)}</td>
+        <td><span class="badge badge-primary">${escapeHtml(p.category)}</span></td>
+        <td style="font-size:0.8rem; color:var(--text-muted); max-width:260px;">${escapeHtml(p.description)}</td>
+        <td style="font-weight:700; color:var(--text-main);">₹${p.price.toLocaleString("en-IN")}</td>
+        <td>
+          ${inStock 
+            ? `<span class="badge badge-success">In Stock (${p.stock})</span>` 
+            : `<span class="badge badge-danger">Out of Stock</span>`}
+        </td>
+        <td>
+          <button class="btn btn-primary btn-sm" ${!inStock ? 'disabled style="opacity:0.6;"' : ''} onclick="addItemToCart('${p.id}', '${escapeHtml(p.name)}')">
+            + Add
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function filterCatalogTable() {
   const query = (document.getElementById("catalogSearchInput").value || "").toLowerCase();
   const inStockOnly = document.getElementById("filterInStockOnly").checked;
+  const categoryFilter = STATE.selectedCategory;
 
   const filtered = STATE.products.filter(p => {
     const matchesQuery = p.name.toLowerCase().includes(query) ||
@@ -104,11 +202,59 @@ function filterCatalogTable() {
                          p.category.toLowerCase().includes(query) ||
                          p.tags.toLowerCase().includes(query);
     const matchesStock = inStockOnly ? p.stock > 0 : true;
-    return matchesQuery && matchesStock;
+    const matchesCategory = categoryFilter === "all" || p.category.toLowerCase() === categoryFilter.toLowerCase();
+    return matchesQuery && matchesStock && matchesCategory;
   });
 
   renderCatalogTable(filtered);
 }
+
+function openQuickView(productId) {
+  const p = STATE.products.find(item => item.id === productId);
+  if (!p) return;
+  STATE.currentQvProduct = p;
+
+  document.getElementById("qvImage").src = p.image_url || DEFAULT_IMG;
+  document.getElementById("qvCategory").textContent = p.category;
+  document.getElementById("qvTitle").textContent = p.name;
+  document.getElementById("qvPrice").textContent = `₹${p.price.toLocaleString("en-IN")}`;
+  document.getElementById("qvDescription").textContent = p.description;
+  document.getElementById("qvTags").textContent = p.tags;
+
+  const badge = document.getElementById("qvStockBadge");
+  const addBtn = document.getElementById("qvAddToCartBtn");
+  if (p.stock > 0) {
+    badge.className = "badge badge-success";
+    badge.textContent = `In Stock (${p.stock})`;
+    addBtn.disabled = false;
+    addBtn.style.opacity = "1";
+    addBtn.textContent = "🛒 Add to Cart";
+  } else {
+    badge.className = "badge badge-danger";
+    badge.textContent = "Out of Stock";
+    addBtn.disabled = true;
+    addBtn.style.opacity = "0.6";
+    addBtn.textContent = "Sold Out";
+  }
+
+  document.getElementById("productQuickViewModal").classList.add("active");
+}
+
+function closeQuickView(event) {
+  if (event && event.target && event.target.id !== "productQuickViewModal" && !event.target.classList.contains("modal-close-btn")) {
+    return;
+  }
+  document.getElementById("productQuickViewModal").classList.remove("active");
+  STATE.currentQvProduct = null;
+}
+
+function addCurrentQvToCart() {
+  if (STATE.currentQvProduct) {
+    addItemToCart(STATE.currentQvProduct.id, STATE.currentQvProduct.name);
+    closeQuickView();
+  }
+}
+
 
 async function handleFileUpload(event) {
   const file = event.target.files[0];
@@ -303,12 +449,14 @@ function appendAssistantResponse(data) {
       const p = rec.product;
       const cardClass = rec.is_upsell ? "rec-card upsell" : "rec-card";
       const tagText = rec.is_upsell ? "⭐ UPSELL UPGRADE" : "✅ RECOMMENDED";
+      const imgUrl = p.image_url || DEFAULT_IMG;
       
       html += `
         <div class="${cardClass}">
-          <div class="rec-info">
+          <img src="${imgUrl}" alt="${escapeHtml(p.name)}" class="rec-thumb" onerror="handleImgError(this)" onclick="openQuickView('${p.id}')">
+          <div class="rec-info" style="flex:1;">
             <div style="font-size:0.65rem; font-weight:700; color:var(--primary);">${tagText}</div>
-            <h4>${escapeHtml(p.name)}</h4>
+            <h4 style="cursor:pointer;" onclick="openQuickView('${p.id}')">${escapeHtml(p.name)}</h4>
             <p>${escapeHtml(rec.reason)}</p>
           </div>
           <div style="text-align:right;">
@@ -329,11 +477,13 @@ function appendAssistantResponse(data) {
     html += `<div class="rec-cards-list">`;
     data.cross_sells.forEach(cs => {
       const p = cs.product;
+      const imgUrl = p.image_url || DEFAULT_IMG;
       html += `
         <div class="rec-card cross-sell">
-          <div class="rec-info">
+          <img src="${imgUrl}" alt="${escapeHtml(p.name)}" class="rec-thumb" onerror="handleImgError(this)" onclick="openQuickView('${p.id}')">
+          <div class="rec-info" style="flex:1;">
             <div style="font-size:0.65rem; font-weight:700; color:var(--secondary);">💡 COMPLEMENTARY ADD-ON</div>
-            <h4>${escapeHtml(p.name)}</h4>
+            <h4 style="cursor:pointer;" onclick="openQuickView('${p.id}')">${escapeHtml(p.name)}</h4>
             <p>${escapeHtml(cs.reason)} <em style="color:var(--text-main); font-weight:500;">${escapeHtml(cs.savings_tip || "")}</em></p>
           </div>
           <div style="text-align:right;">
@@ -447,6 +597,9 @@ function updateCartUI(cart) {
   const count = cart ? cart.item_count : 0;
   document.getElementById("cartBadgeCount").textContent = count;
   document.getElementById("cartTotalItems").textContent = count;
+  
+  const fab = document.getElementById("fabCartCount");
+  if (fab) fab.textContent = count;
 
   // Render Mini Cart in chat sidebar
   const mini = document.getElementById("miniCartContent");
@@ -458,9 +611,12 @@ function updateCartUI(cart) {
   mini.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:0.5rem;">
       ${cart.items.map(item => `
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-          <span>${item.quantity}x ${escapeHtml(item.name)}</span>
-          <span style="font-weight:600;">₹${item.line_total.toLocaleString("en-IN")}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; gap:0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.4rem; overflow:hidden;">
+            <img src="${item.image_url || DEFAULT_IMG}" alt="" style="width:28px; height:28px; border-radius:4px; object-fit:cover;" onerror="handleImgError(this)">
+            <span style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${item.quantity}x ${escapeHtml(item.name)}</span>
+          </div>
+          <span style="font-weight:600; white-space:nowrap;">₹${item.line_total.toLocaleString("en-IN")}</span>
         </div>
       `).join("")}
       <div style="border-top:1px solid var(--border); margin-top:0.5rem; padding-top:0.5rem; display:flex; justify-content:space-between; font-weight:700;">
@@ -492,10 +648,13 @@ function renderFullCartView(cart) {
   }
 
   const itemsHtml = cart.items.map(item => `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 0; border-bottom:1px solid var(--border);">
-      <div>
-        <h4 style="font-size:0.95rem; font-weight:600;">${escapeHtml(item.name)}</h4>
-        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.15rem;">Unit Price: ₹${item.unit_price.toLocaleString("en-IN")} • Category: ${escapeHtml(item.category)}</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem 0; border-bottom:1px solid var(--border); gap:0.75rem;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <img src="${item.image_url || DEFAULT_IMG}" alt="${escapeHtml(item.name)}" class="cart-item-thumb" onerror="handleImgError(this)" onclick="openQuickView('${item.product_id}')">
+        <div>
+          <h4 style="font-size:0.95rem; font-weight:600; cursor:pointer;" onclick="openQuickView('${item.product_id}')">${escapeHtml(item.name)}</h4>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.15rem;">Unit Price: ₹${item.unit_price.toLocaleString("en-IN")} • Category: ${escapeHtml(item.category)}</div>
+        </div>
       </div>
       <div style="display:flex; align-items:center; gap:0.75rem;">
         <div style="display:flex; align-items:center; gap:0.3rem;">
@@ -591,8 +750,11 @@ async function initiateCheckout() {
     const verifyData = await verifyRes.json();
     if (!verifyRes.ok) throw new Error(verifyData.detail || "Payment verification failed");
 
-    // Success flow: Reset active cart and notify user
-    showToast("🎉 Payment verified successfully! Order completed.");
+    // Capture items for the PhonePe receipt screen before clearing cart
+    const purchasedItems = STATE.cart && STATE.cart.items ? [...STATE.cart.items] : [];
+    const paidAmount = orderData.amount || (STATE.cart ? STATE.cart.total : 0);
+
+    // Success flow: Reset active cart
     STATE.cartId = null;
     localStorage.removeItem("smartcart_active_cart_id");
     STATE.cart = null;
@@ -601,13 +763,12 @@ async function initiateCheckout() {
     updateCartUI(null);
     document.getElementById("chkUserConfirm").checked = false;
 
-    // Show order receipt confirmation
-    appendChatBubble("assistant", `🎉 **Payment Verified & Order Confirmed!**\n- **Order ID:** \`${verifyData.order_id}\`\n- **Payment ID:** \`${verifyData.razorpay_payment_id}\`\n- **Status:** **PAID**\nYour products are being prepared for dispatch!`);
-    
-    // Switch to Analytics to view updated metrics
-    setTimeout(() => {
-      switchTab("analytics");
-    }, 1200);
+    // Show order receipt confirmation in chat
+    appendChatBubble("assistant", `🎉 **Payment Verified & Order Confirmed!**\n- **Order ID:** \`${verifyData.order_id}\`\n- **Payment ID:** \`${verifyData.razorpay_payment_id}\`\n- **Amount:** ₹${paidAmount.toLocaleString("en-IN")}\n- **Status:** **PAID**\nYour products are being packed!`);
+
+    // Launch Full-Screen PhonePe / UPI Success Modal with chime sound & confetti
+    triggerPhonePeSuccess(paidAmount, verifyData.order_id, verifyData.razorpay_payment_id || mockPaymentId, purchasedItems);
+
 
   } catch (err) {
     showToast(`❌ Checkout Error: ${err.message}`);
@@ -718,3 +879,197 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchCatalog();
   loadCartView();
 });
+
+// ==========================================
+// 6. FULL-SCREEN PHONEPE SUCCESS & AUDIO CHIME
+// ==========================================
+
+function playPhonePeChime() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    // Harmonic UPI chime sequence (G4 -> C5 -> E5 -> G5)
+    const tones = [
+      { freq: 392.00, start: 0.0, dur: 0.14 },
+      { freq: 523.25, start: 0.10, dur: 0.16 },
+      { freq: 659.25, start: 0.20, dur: 0.20 },
+      { freq: 783.99, start: 0.32, dur: 0.75 }
+    ];
+
+    tones.forEach(t => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(t.freq, now + t.start);
+
+      gain.gain.setValueAtTime(0.25, now + t.start);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + t.start + t.dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + t.start);
+      osc.stop(now + t.start + t.dur);
+    });
+  } catch (err) {
+    console.warn("Web Audio error:", err);
+  }
+}
+
+function startConfetti() {
+  const canvas = document.getElementById("confettiCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const colors = ["#10b981", "#3b82f6", "#f59e0b", "#ec4899", "#8b5cf6", "#ffffff"];
+  for (let i = 0; i < 90; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.4,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 3 + 2,
+      rot: Math.random() * 360,
+      vrot: (Math.random() - 0.5) * 10
+    });
+  }
+
+  let frames = 0;
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      if (p.y < canvas.height) alive = true;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rot * Math.PI) / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      ctx.restore();
+    });
+
+    frames++;
+    if (alive && frames < 180) {
+      requestAnimationFrame(render);
+    }
+  }
+  render();
+}
+
+let lastCompletedPayment = null;
+
+function triggerPhonePeSuccess(amount, orderId, paymentId, items) {
+  lastCompletedPayment = { amount, orderId, paymentId, items, time: new Date() };
+
+  document.getElementById("successDisplayAmount").textContent = amount.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+  document.getElementById("successPaymentId").textContent = paymentId;
+  document.getElementById("successOrderId").textContent = orderId;
+  document.getElementById("successTimestamp").textContent = new Date().toLocaleString("en-IN", {
+    month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"
+  });
+
+  document.getElementById("successItemsCount").textContent = items ? items.length : 0;
+  const itemsContainer = document.getElementById("successItemsList");
+  if (items && items.length > 0) {
+    itemsContainer.innerHTML = items.map(item => `
+      <div class="slip-item-entry">
+        <span>${item.quantity}x ${escapeHtml(item.name)}</span>
+        <strong style="color:var(--text-main);">₹${item.line_total.toLocaleString("en-IN")}</strong>
+      </div>
+    `).join("");
+  } else {
+    itemsContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.75rem;">Instant Checkout</div>`;
+  }
+
+  const modal = document.getElementById("paymentSuccessModal");
+  modal.classList.add("active");
+
+  playPhonePeChime();
+  startConfetti();
+}
+
+function closeSuccessModalAndContinue() {
+  document.getElementById("paymentSuccessModal").classList.remove("active");
+  switchTab("catalog");
+}
+
+function copyTransactionId() {
+  if (lastCompletedPayment && lastCompletedPayment.paymentId) {
+    navigator.clipboard.writeText(lastCompletedPayment.paymentId);
+    showToast("📋 Transaction ID copied to clipboard!");
+  }
+}
+
+function printReceipt() {
+  window.print();
+}
+
+// ==========================================
+// 7. VOICE INPUT / SPEAK TO SHOP
+// ==========================================
+let recognition = null;
+let isListening = false;
+
+function toggleVoiceInput() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast("🎙️ Voice search is best supported in Chrome, Edge, or Safari.");
+    return;
+  }
+
+  const micBtn = document.getElementById("btnVoiceInput");
+  const statusBar = document.getElementById("voiceStatusIndicator");
+
+  if (isListening && recognition) {
+    recognition.stop();
+    isListening = false;
+    micBtn.classList.remove("listening");
+    if (statusBar) statusBar.style.display = "none";
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = "en-IN";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isListening = true;
+    micBtn.classList.add("listening");
+    if (statusBar) statusBar.style.display = "flex";
+  };
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById("chatInput").value = transcript;
+    showToast(`🎙️ Recognized: "${transcript}"`);
+    handleChatSubmit(new Event("submit"));
+  };
+
+  recognition.onerror = (event) => {
+    console.warn("Speech recognition error:", event.error);
+    isListening = false;
+    micBtn.classList.remove("listening");
+    if (statusBar) statusBar.style.display = "none";
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    micBtn.classList.remove("listening");
+    if (statusBar) statusBar.style.display = "none";
+  };
+
+  recognition.start();
+}
+

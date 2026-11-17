@@ -35,6 +35,30 @@ class CatalogService:
             p_price_str = row.get("price", "")
             p_stock_str = row.get("stock", "")
             p_tags = row.get("tags", "")
+            p_image = row.get("image_url", "").strip()
+
+            # Fallback high quality product photo based on category / keywords
+            if not p_image:
+                cat_lower = (p_category or "").lower()
+                tag_lower = (p_tags or "").lower()
+                if "keyboard" in cat_lower or "keyboard" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80"
+                elif "mic" in cat_lower or "mouse" in tag_lower or "mice" in cat_lower:
+                    p_image = "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&auto=format&fit=crop&q=80"
+                elif "stand" in cat_lower or "stand" in tag_lower or "cooling" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&auto=format&fit=crop&q=80"
+                elif "camera" in cat_lower or "webcam" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?w=500&auto=format&fit=crop&q=80"
+                elif "audio" in cat_lower or "headset" in tag_lower or "sound" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80"
+                elif "light" in cat_lower or "lamp" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500&auto=format&fit=crop&q=80"
+                elif "mat" in tag_lower or "wrist" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=500&auto=format&fit=crop&q=80"
+                elif "hub" in tag_lower or "usb" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1622445262464-84b150777731?w=500&auto=format&fit=crop&q=80"
+                else:
+                    p_image = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80"
 
             # Validation checks
             if not p_id:
@@ -75,6 +99,7 @@ class CatalogService:
                 "currency": "INR",
                 "stock": p_stock,
                 "tags": p_tags,
+                "image_url": p_image,
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
 
@@ -83,15 +108,16 @@ class CatalogService:
             with db_session() as conn:
                 for p in valid_products:
                     conn.execute("""
-                        INSERT INTO products (id, name, category, description, price, currency, stock, tags, created_at)
-                        VALUES (:id, :name, :category, :description, :price, :currency, :stock, :tags, :created_at)
+                        INSERT INTO products (id, name, category, description, price, currency, stock, tags, image_url, created_at)
+                        VALUES (:id, :name, :category, :description, :price, :currency, :stock, :tags, :image_url, :created_at)
                         ON CONFLICT(id) DO UPDATE SET
                             name=excluded.name,
                             category=excluded.category,
                             description=excluded.description,
                             price=excluded.price,
                             stock=excluded.stock,
-                            tags=excluded.tags;
+                            tags=excluded.tags,
+                            image_url=excluded.image_url;
                     """, p)
 
                 log_audit(
@@ -114,7 +140,7 @@ class CatalogService:
     @staticmethod
     def list_products(category: Optional[str] = None, in_stock_only: bool = False, query: Optional[str] = None) -> List[ProductResponse]:
         with db_session() as conn:
-            sql = "SELECT id, name, category, description, price, currency, stock, tags, created_at FROM products WHERE 1=1"
+            sql = "SELECT id, name, category, description, price, currency, stock, tags, image_url, created_at FROM products WHERE 1=1"
             params: List[Any] = []
 
             if in_stock_only:
@@ -136,8 +162,9 @@ class CatalogService:
     def get_product(product_id: str) -> Optional[ProductResponse]:
         with db_session() as conn:
             cursor = conn.execute(
-                "SELECT id, name, category, description, price, currency, stock, tags, created_at FROM products WHERE id = ?",
+                "SELECT id, name, category, description, price, currency, stock, tags, image_url, created_at FROM products WHERE id = ?",
                 (product_id,)
             )
             row = cursor.fetchone()
             return ProductResponse(**dict(row)) if row else None
+

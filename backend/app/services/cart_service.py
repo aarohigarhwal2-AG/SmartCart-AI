@@ -147,7 +147,7 @@ class CartService:
             raise ValueError(f"Cart '{cart_id}' not found.")
 
         items_cursor = conn.execute("""
-            SELECT ci.id, ci.product_id, ci.quantity, ci.unit_price, p.name, p.category
+            SELECT ci.id, ci.product_id, ci.quantity, ci.unit_price, p.name, p.category, p.image_url
             FROM cart_items ci
             JOIN products p ON ci.product_id = p.id
             WHERE ci.cart_id = ?
@@ -162,7 +162,8 @@ class CartService:
                 category=r["category"],
                 quantity=r["quantity"],
                 unit_price=r["unit_price"],
-                line_total=round(r["quantity"] * r["unit_price"], 2)
+                line_total=round(r["quantity"] * r["unit_price"], 2),
+                image_url=r["image_url"]
             ))
 
         return CartResponse(

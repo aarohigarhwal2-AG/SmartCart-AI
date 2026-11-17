@@ -1,12 +1,12 @@
-id,name,category,description,price,stock,tags
-R101,Zebronics ZEB-90HB 4-Port USB Hub,Accessories,Compact 4-port USB 2.0 hub with individual power switches and LED indicators,499,35,laptop;accessory;usb;hub;work-from-home
-R102,Flipkart SmartBuy FKLST3 Foldable Laptop Stand,Stands,Adjustable multi-angle aluminium alloy ergonomic laptop stand for desk,1499,20,work-from-home;stand;laptop;ergonomic
-R103,Logitech MK270 Wireless Keyboard and Mouse Combo,Keyboards,Full-size keyboard with 8 shortcut keys and compact wireless optical mouse,1799,15,office;keyboard;mouse;wireless;work-from-home
-R104,Zebronics Zeb-Ultimate Star 1080p HD Webcam,Cameras,Clear Full HD webcam with built-in noise reducing microphone and privacy cover,1399,18,video-call;camera;webcam;work-from-home;office
-R105,Logitech Brio 100 Full HD Webcam,Cameras,Premium 1080p webcam with auto-light balance and built-in mic for video meetings,2199,8,video-call;camera;webcam;office
-R106,Portronics Toad 23 Wireless Optical Mouse,Mice,2.4GHz wireless mouse with ergonomic grip and 1200 DPI optical sensor,399,40,office;mouse;wireless;work-from-home
-R107,Amkette ErgoTouch Gel Memory Foam Wrist Rest,Accessories,Ergonomic wrist rest pad with cooling gel and anti-slip rubber base,449,25,wrist-rest;ergonomic;keyboard;accessory
-R108,Zebronics Zeb-Crisp Pro 4K Ultra HD Webcam,Cameras,Studio-quality 4K webcam with dual stereo microphones and autofocus,2999,0,camera;webcam;video-call;premium
-R109,Tukzer Leatherette Extended Desk Mat (80x40cm),Accessories,Waterproof anti-skid dual-sided desk protector pad for keyboard and mouse,599,30,desk;mat;accessory;office;work-from-home
-R110,Syska Smart LED Desk Lamp 7W,Lighting,Touch control dimmable study lamp with 3 color temperatures,899,12,lighting;lamp;desk;work-from-home
-R111,EvoFox Shadow Mechanical Gaming Keyboard,Keyboards,Tactile blue switch mechanical keyboard with rainbow LED backlighting,2199,10,keyboard;mechanical;rgb;gaming;office
+id,name,category,description,price,stock,tags,image_url
+R101,Zebronics ZEB-90HB 4-Port USB Hub,Accessories,Compact 4-port USB 2.0 hub with individual power switches and LED indicators,499,35,laptop;accessory;usb;hub;work-from-home,https://images.unsplash.com/photo-1622445262464-84b150777731?w=500&auto=format&fit=crop&q=80
+R102,Flipkart SmartBuy FKLST3 Foldable Laptop Stand,Stands,Adjustable multi-angle aluminium alloy ergonomic laptop stand for desk,1499,20,work-from-home;stand;laptop;ergonomic,https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&auto=format&fit=crop&q=80
+R103,Logitech MK270 Wireless Keyboard and Mouse Combo,Keyboards,Full-size keyboard with 8 shortcut keys and compact wireless optical mouse,1799,15,office;keyboard;mouse;wireless;work-from-home,https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80
+R104,Zebronics Zeb-Ultimate Star 1080p HD Webcam,Cameras,Clear Full HD webcam with built-in noise reducing microphone and privacy cover,1399,18,video-call;camera;webcam;work-from-home;office,https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?w=500&auto=format&fit=crop&q=80
+R105,Logitech Brio 100 Full HD Webcam,Cameras,Premium 1080p webcam with auto-light balance and built-in mic for video meetings,2199,8,video-call;camera;webcam;office,https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=500&auto=format&fit=crop&q=80
+R106,Portronics Toad 23 Wireless Optical Mouse,Mice,2.4GHz wireless mouse with ergonomic grip and 1200 DPI optical sensor,399,40,office;mouse;wireless;work-from-home,https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&auto=format&fit=crop&q=80
+R107,Amkette ErgoTouch Gel Memory Foam Wrist Rest,Accessories,Ergonomic wrist rest pad with cooling gel and anti-slip rubber base,449,25,wrist-rest;ergonomic;keyboard;accessory,https://images.unsplash.com/photo-1595225476474-87563907a212?w=500&auto=format&fit=crop&q=80
+R108,Zebronics Zeb-Crisp Pro 4K Ultra HD Webcam,Cameras,Studio-quality 4K webcam with dual stereo microphones and autofocus,2999,0,camera;webcam;video-call;premium,https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?w=500&auto=format&fit=crop&q=80
+R109,Tukzer Leatherette Extended Desk Mat (80x40cm),Accessories,Waterproof anti-skid dual-sided desk protector pad for keyboard and mouse,599,30,desk;mat;accessory;office;work-from-home,https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=500&auto=format&fit=crop&q=80
+R110,Syska Smart LED Desk Lamp 7W,Lighting,Touch control dimmable study lamp with 3 color temperatures,899,12,lighting;lamp;desk;work-from-home,https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500&auto=format&fit=crop&q=80
+R111,EvoFox Shadow Mechanical Gaming Keyboard,Keyboards,Tactile blue switch mechanical keyboard with rainbow LED backlighting,2199,10,keyboard;mechanical;rgb;gaming;office,https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&auto=format&fit=crop&q=80

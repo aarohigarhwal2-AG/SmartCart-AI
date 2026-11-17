@@ -11,6 +11,7 @@ class ProductBase(BaseModel):
     currency: str = "INR"
     stock: int
     tags: str
+    image_url: Optional[str] = None
 
 class ProductCreate(ProductBase):
     pass
@@ -80,6 +81,7 @@ class CartItemDetail(BaseModel):
     quantity: int
     unit_price: float
     line_total: float
+    image_url: Optional[str] = None
 
 class CartResponse(BaseModel):
     cart_id: str

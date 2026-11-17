@@ -91,33 +91,59 @@
         </div>
       </div>
 
-      <!-- Live Catalog Table -->
+      <!-- Live Catalog Table & Grid -->
       <div class="card">
-        <div class="card-title">
-          <span>Live Inventory Products</span>
-          <div style="display:flex; gap:0.5rem;">
-            <input type="text" id="catalogSearchInput" placeholder="Filter by keyword..." style="padding:0.4rem 0.6rem; border:1px solid var(--border); border-radius:0.375rem; font-size:0.8rem;" oninput="filterCatalogTable()">
-            <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.3rem; color:var(--text-muted);">
+        <div class="card-title" style="flex-wrap:wrap; gap:0.75rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <span>Live Inventory Products</span>
+            <div class="view-switch-group">
+              <button class="btn btn-sm btn-secondary active" id="btnViewGrid" onclick="setCatalogView('grid')">🔲 Visual Cards</button>
+              <button class="btn btn-sm btn-secondary" id="btnViewTable" onclick="setCatalogView('table')">📋 Table</button>
+            </div>
+          </div>
+          
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="catalogSearchInput" placeholder="Filter by keyword..." style="padding:0.4rem 0.6rem; border:1px solid var(--border); border-radius:0.375rem; font-size:0.8rem; min-width:180px;" oninput="filterCatalogTable()">
+            <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.3rem; color:var(--text-muted); cursor:pointer;">
               <input type="checkbox" id="filterInStockOnly" onchange="filterCatalogTable()"> In-stock only
             </label>
           </div>
         </div>
 
-        <div class="table-responsive">
+        <!-- Category Quick Filter Chips -->
+        <div class="catalog-category-chips" id="catalogCategoryChips">
+          <span class="category-chip active" onclick="filterByCategory('all')">All Products</span>
+          <span class="category-chip" onclick="filterByCategory('Keyboards')">⌨️ Keyboards</span>
+          <span class="category-chip" onclick="filterByCategory('Mice')">🖱️ Mice</span>
+          <span class="category-chip" onclick="filterByCategory('Stands')">💻 Stands</span>
+          <span class="category-chip" onclick="filterByCategory('Cameras')">📹 Cameras</span>
+          <span class="category-chip" onclick="filterByCategory('Audio')">🎧 Audio</span>
+          <span class="category-chip" onclick="filterByCategory('Lighting')">💡 Lighting</span>
+          <span class="category-chip" onclick="filterByCategory('Accessories')">🔌 Accessories</span>
+        </div>
+
+        <!-- Grid View (Product Image Cards) -->
+        <div id="catalogGridView" class="product-cards-grid" style="margin-top:1.25rem;">
+          <div style="grid-column:1/-1; text-align:center; padding:2rem; color:var(--text-muted);">Loading products...</div>
+        </div>
+
+        <!-- Table View -->
+        <div id="catalogTableView" class="table-responsive" style="display:none; margin-top:1rem;">
           <table>
             <thead>
               <tr>
+                <th>Image</th>
                 <th>ID</th>
                 <th>Product Name</th>
                 <th>Category</th>
                 <th>Description</th>
                 <th>Price (₹)</th>
                 <th>Stock Status</th>
-                <th>Tags</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="catalogTableBody">
-              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading catalog...</td></tr>
+              <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading catalog...</td></tr>
             </tbody>
           </table>
         </div>
@@ -155,9 +181,17 @@
             </div>
           </div>
 
+          <!-- Voice Status Notification -->
+          <div id="voiceStatusIndicator" class="voice-status-bar" style="display:none;">
+            <span class="pulsing-record-dot"></span> Listening... Speak clearly now (e.g. "Wireless mouse under 1000")
+          </div>
+
           <!-- Chat Input Form -->
           <form class="chat-input-row" onsubmit="handleChatSubmit(event)">
-            <input type="text" id="chatInput" placeholder="Type your requirement (e.g., 'WFH setup under ₹3,000')..." autocomplete="off">
+            <button type="button" class="btn-voice" id="btnVoiceInput" onclick="toggleVoiceInput()" title="Speak to search (Voice Search)">
+              🎙️
+            </button>
+            <input type="text" id="chatInput" placeholder="Type or click 🎙️ to speak (e.g., 'WFH setup under ₹3,000')..." autocomplete="off">
             <button type="submit" class="btn btn-primary" id="btnSendChat">Send</button>
           </form>
         </div>
@@ -373,6 +407,118 @@
     </section>
 
   </main>
+
+  <!-- Floating Cart Action Button (FAB) -->
+  <div class="cart-fab" onclick="switchTab('cart')" title="View Active Cart">
+    🛒 <span id="fabCartCount" class="fab-pill">0</span>
+  </div>
+
+  <!-- Product Quick View Modal -->
+  <div id="productQuickViewModal" class="modal-overlay" onclick="closeQuickView(event)">
+    <div class="quick-view-card" onclick="event.stopPropagation()">
+      <button class="modal-close-btn" onclick="closeQuickView()">&times;</button>
+      <div class="quick-view-body">
+        <div class="quick-view-img-col">
+          <img id="qvImage" src="" alt="Product Preview" class="quick-view-img" onerror="handleImgError(this)">
+          <div id="qvStockBadge" class="badge badge-success" style="position:absolute; top:12px; left:12px;">In Stock</div>
+        </div>
+        <div class="quick-view-info-col">
+          <span id="qvCategory" class="badge badge-primary" style="align-self:flex-start; margin-bottom:0.5rem;">Category</span>
+          <h2 id="qvTitle" style="font-size:1.35rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-main);">Product Title</h2>
+          <div id="qvPrice" style="font-size:1.5rem; font-weight:800; color:var(--primary); margin-bottom:0.75rem;">₹0.00</div>
+          <p id="qvDescription" style="font-size:0.875rem; color:var(--text-muted); line-height:1.6; margin-bottom:1.25rem;">Description here</p>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1.25rem;">
+            🏷️ Tags: <span id="qvTags">tags</span>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <button id="qvAddToCartBtn" class="btn btn-primary" style="flex:1; padding:0.75rem;" onclick="addCurrentQvToCart()">
+              🛒 Add to Cart
+            </button>
+            <button class="btn btn-secondary" style="padding:0.75rem;" onclick="closeQuickView()">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full-Screen PhonePe / UPI Payment Success Screen -->
+  <div id="paymentSuccessModal" class="fullscreen-payment-overlay">
+    <!-- Celebratory Confetti Canvas -->
+    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+    <div class="payment-success-card">
+      <!-- Animated Checkmark Circle -->
+      <div class="checkmark-animation-wrapper">
+        <svg class="checkmark-svg" viewBox="0 0 52 52">
+          <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+          <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+      </div>
+
+      <div class="upi-brand-badge">
+        <span class="upi-icon">⚡</span> SmartCart Instant Pay
+      </div>
+
+      <h1 class="success-main-title">Payment Successful!</h1>
+      <p class="success-sub-text">Paid to <strong>SmartCart Merchant Store</strong></p>
+
+      <!-- Amount Banner -->
+      <div class="success-amount-banner">
+        <span class="currency-tag">₹</span><span id="successDisplayAmount">0.00</span>
+      </div>
+
+      <!-- Transaction Digital Slip -->
+      <div class="payment-slip">
+        <div class="slip-header">
+          <span>TRANSACTION DETAILS</span>
+          <span class="verified-pill">✓ Verified by Gateway</span>
+        </div>
+        <div class="slip-row">
+          <span class="slip-label">Transaction ID (UTR)</span>
+          <span class="slip-val monospace" id="successPaymentId">pay_test_...</span>
+        </div>
+        <div class="slip-row">
+          <span class="slip-label">SmartCart Order ID</span>
+          <span class="slip-val monospace" id="successOrderId">ORD-...</span>
+        </div>
+        <div class="slip-row">
+          <span class="slip-label">Payment Date & Time</span>
+          <span class="slip-val" id="successTimestamp">Nov 17, 2026, 7:30 PM</span>
+        </div>
+        <div class="slip-row">
+          <span class="slip-label">Payment Mode</span>
+          <span class="slip-val">Razorpay Test UPI / NetBanking</span>
+        </div>
+        
+        <!-- Purchased Items Summary -->
+        <div class="slip-items-container">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:0.4rem; text-transform:uppercase;">
+            Purchased Items (<span id="successItemsCount">0</span>)
+          </div>
+          <div id="successItemsList" class="slip-items-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="success-modal-actions">
+        <button class="btn-success-primary" onclick="closeSuccessModalAndContinue()">
+          🛍️ Continue Shopping
+        </button>
+        <div style="display:flex; gap:0.5rem; width:100%;">
+          <button class="btn-success-secondary" onclick="printReceipt()">
+            🖨️ Print Receipt
+          </button>
+          <button class="btn-success-secondary" onclick="copyTransactionId()">
+            📋 Copy Txn ID
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Notification -->
   <div id="appToast" class="toast">Action completed</div>
