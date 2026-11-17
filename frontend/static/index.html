@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartCart AI - Conversational Merchant Growth & Checkout</title>
-  <link rel="stylesheet" href="/static/style.css?v=2.2.0">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%234f46e5'/%3E%3Cstop offset='60%25' stop-color='%237c3aed'/%3E%3Cstop offset='100%25' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='14' fill='url(%23g)'/%3E%3Cpath d='M12 14h4l2.8 12.5c.2.9 1 1.5 1.9 1.5h11.5c.9 0 1.7-.6 1.9-1.5L36.2 18H17.2' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Ccircle cx='21.5' cy='33.5' r='2.5' fill='%23fff'/%3E%3Ccircle cx='31.5' cy='33.5' r='2.5' fill='%23fff'/%3E%3Cpath d='M26.5 9.5c0 2.5 2 4.5 4.5 4.5-2.5 0-4.5 2-4.5 4.5 0-2.5-2-4.5-4.5-4.5 2.5 0 4.5-2 4.5-4.5z' fill='%23fff'/%3E%3Ccircle cx='33' cy='10' r='1.2' fill='%23fef08a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css?v=2.3.0">
   <!-- Razorpay Checkout Script -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
@@ -13,13 +14,48 @@
   <!-- Top Navigation Header -->
   <header class="header">
     <div class="header-container">
-      <div class="logo-container">
-        <div class="logo-badge">⚡ SC</div>
-        <div>
-          <h1 class="logo-title">SmartCart AI</h1>
-          <p class="logo-subtitle">Conversational Merchant Growth & Razorpay Checkout Agent</p>
+      <a href="/" class="logo-container" onclick="switchPersona('customer'); return false;" title="SmartCart AI Home">
+        <div class="logo-icon-wrapper">
+          <svg class="smartcart-logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="scGradientBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4f46e5" />
+                <stop offset="55%" stop-color="#7c3aed" />
+                <stop offset="100%" stop-color="#06b6d4" />
+              </linearGradient>
+              <linearGradient id="scSparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="100%" stop-color="#cffafe" />
+              </linearGradient>
+              <filter id="scGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2.5" stdDeviation="3.5" flood-color="#4f46e5" flood-opacity="0.35" />
+              </filter>
+            </defs>
+            <!-- Squircle Background with ambient shadow -->
+            <rect width="48" height="48" rx="13" fill="url(#scGradientBg)" filter="url(#scGlow)" />
+            <!-- Soft inner border -->
+            <rect x="0.75" y="0.75" width="46.5" height="46.5" rx="12.25" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" />
+            <!-- Modern Shopping Cart Frame -->
+            <path d="M12 14H16L18.8 26.5C19 27.4 19.8 28 20.7 28H32.2C33.1 28 33.9 27.4 34.1 26.5L36.2 18H17.2" 
+                  stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+            <!-- Cart Wheels -->
+            <circle cx="21.5" cy="33.5" r="2.5" fill="#ffffff" />
+            <circle cx="31.5" cy="33.5" r="2.5" fill="#ffffff" />
+            <!-- AI Intelligence Spark -->
+            <path d="M26.5 9.5C26.5 12 28.5 14 31 14C28.5 14 26.5 16 26.5 18.5C26.5 16 24.5 14 22 14C24.5 14 26.5 12 26.5 9.5Z" 
+                  fill="url(#scSparkGrad)" />
+            <!-- Mini Sparkle -->
+            <circle cx="33" cy="10" r="1.2" fill="#fef08a" />
+          </svg>
         </div>
-      </div>
+        <div class="logo-text-group">
+          <div class="logo-title-row">
+            <span class="brand-name">Smart<span class="brand-highlight">Cart</span></span>
+            <span class="ai-brand-badge">AI</span>
+          </div>
+          <p class="logo-subtitle">Conversational Commerce &amp; Razorpay Checkout Agent</p>
+        </div>
+      </a>
 
       <!-- Top Persona Switcher -->
       <div class="persona-switch-bar">
@@ -572,6 +608,6 @@
   <div id="appToast" class="toast">Action completed</div>
 
   <!-- Custom Scripts -->
-  <script src="/static/app.js?v=2.2.0"></script>
+  <script src="/static/app.js?v=2.3.0"></script>
 </body>
 </html>
