@@ -44,19 +44,25 @@ class CatalogService:
                 if "keyboard" in cat_lower or "keyboard" in tag_lower:
                     p_image = "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80"
                 elif "mic" in cat_lower or "mouse" in tag_lower or "mice" in cat_lower:
-                    p_image = "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&auto=format&fit=crop&q=80"
-                elif "stand" in cat_lower or "stand" in tag_lower or "cooling" in tag_lower:
-                    p_image = "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&auto=format&fit=crop&q=80"
+                    p_image = "https://images.unsplash.com/photo-1527814050087-3793815479db?w=500&auto=format&fit=crop&q=80"
+                elif "stand" in cat_lower or "stand" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1527689368864-3a821dbccc34?w=500&auto=format&fit=crop&q=80"
+                elif "cooling" in cat_lower or "cooling" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=500&auto=format&fit=crop&q=80"
                 elif "camera" in cat_lower or "webcam" in tag_lower:
-                    p_image = "https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?w=500&auto=format&fit=crop&q=80"
+                    p_image = "https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=500&auto=format&fit=crop&q=80"
                 elif "audio" in cat_lower or "headset" in tag_lower or "sound" in tag_lower:
                     p_image = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80"
                 elif "light" in cat_lower or "lamp" in tag_lower:
                     p_image = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=500&auto=format&fit=crop&q=80"
-                elif "mat" in tag_lower or "wrist" in tag_lower:
+                elif "wrist" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1595225476474-87563907a212?w=500&auto=format&fit=crop&q=80"
+                elif "mat" in tag_lower or "pad" in tag_lower:
                     p_image = "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=500&auto=format&fit=crop&q=80"
                 elif "hub" in tag_lower or "usb" in tag_lower:
-                    p_image = "https://images.unsplash.com/photo-1622445262464-84b150777731?w=500&auto=format&fit=crop&q=80"
+                    p_image = "https://images.unsplash.com/photo-1625842268584-8f3296236761?w=500&auto=format&fit=crop&q=80"
+                elif "cable" in tag_lower or "organizer" in tag_lower:
+                    p_image = "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=500&auto=format&fit=crop&q=80"
                 else:
                     p_image = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=80"
 

@@ -57,10 +57,9 @@ if FRONTEND_DIR.exists():
 @app.on_event("startup")
 def on_startup():
     init_db()
-    # If no products exist yet, auto-populate from sample_catalog.csv
+    # Always sync/upsert verified catalog on startup so image URLs and stock are accurate
     try:
-        existing = CatalogService.list_products()
-        if not existing and settings.SAMPLE_CATALOG_PATH.exists():
+        if settings.SAMPLE_CATALOG_PATH.exists():
             content = settings.SAMPLE_CATALOG_PATH.read_text(encoding="utf-8")
             CatalogService.parse_and_import_csv(content, session_id="system_init")
     except Exception as e:
