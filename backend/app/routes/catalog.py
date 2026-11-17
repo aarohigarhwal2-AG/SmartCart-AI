@@ -1,10 +1,22 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi.responses import FileResponse
 from typing import List, Optional
 from ..models.schemas import ProductResponse, CatalogUploadResponse
 from ..services.catalog_service import CatalogService
 from ..config import settings
 
 router = APIRouter(prefix="/catalog", tags=["Merchant Catalog"])
+
+@router.get("/download-sample")
+async def download_sample():
+    """Serves the sample catalog CSV file as a download attachment."""
+    if not settings.SAMPLE_CATALOG_PATH.exists():
+        raise HTTPException(status_code=404, detail="Sample catalog not found.")
+    return FileResponse(
+        str(settings.SAMPLE_CATALOG_PATH),
+        media_type="text/csv",
+        filename="smartcart_sample_catalog.csv"
+    )
 
 @router.post("/upload", response_model=CatalogUploadResponse)
 async def upload_catalog(file: UploadFile = File(...)):

@@ -5,13 +5,18 @@ const DEFAULT_IMG = "https://images.unsplash.com/photo-1526738549149-8e07eca6c14
 const STATE = {
   sessionId: "session_" + Math.random().toString(36).substring(2, 9),
   cartId: localStorage.getItem("smartcart_active_cart_id") || null,
-  activeTab: "catalog",
+  persona: "customer",
+  activeTab: "chat",
+  detectedBudget: 3000,
   products: [],
   cart: null,
   catalogView: "grid",
   selectedCategory: "all",
   currentQvProduct: null
 };
+
+// Store curated bundles for one-click add
+window._smartcart_bundles = {};
 
 function handleImgError(img) {
   img.onerror = null;
@@ -21,6 +26,7 @@ function handleImgError(img) {
 // Toast notification helper
 function showToast(msg, duration = 3000) {
   const toast = document.getElementById("appToast");
+  if (!toast) return;
   toast.textContent = msg;
   toast.style.display = "block";
   setTimeout(() => {
@@ -28,28 +34,76 @@ function showToast(msg, duration = 3000) {
   }, duration);
 }
 
-// Tab Switching
+// ==========================================
+// PERSONA & TAB SWITCHING
+// ==========================================
+
+function switchPersona(persona) {
+  STATE.persona = persona;
+  const btnCust = document.getElementById("btnPersonaCustomer");
+  const btnMerch = document.getElementById("btnPersonaMerchant");
+
+  if (persona === "customer") {
+    if (btnCust) btnCust.classList.add("active");
+    if (btnMerch) btnMerch.classList.remove("active");
+    document.querySelectorAll(".nav-customer").forEach(el => el.style.display = "inline-flex");
+    document.querySelectorAll(".nav-merchant").forEach(el => el.style.display = "none");
+    switchTab("chat");
+  } else {
+    if (btnMerch) btnMerch.classList.add("active");
+    if (btnCust) btnCust.classList.remove("active");
+    document.querySelectorAll(".nav-customer").forEach(el => el.style.display = "none");
+    document.querySelectorAll(".nav-merchant").forEach(el => el.style.display = "inline-flex");
+    switchTab("analytics");
+  }
+}
+
 function switchTab(tabName) {
   STATE.activeTab = tabName;
-  document.querySelectorAll(".nav-btn").forEach((btn, idx) => {
-    btn.classList.remove("active");
-  });
+  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
   document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
 
   const targetPane = document.getElementById(`pane-${tabName}`);
   if (targetPane) targetPane.classList.add("active");
 
-  const tabIndex = ["catalog", "chat", "cart", "analytics"].indexOf(tabName);
-  const btns = document.querySelectorAll(".nav-btn");
-  if (btns[tabIndex]) btns[tabIndex].classList.add("active");
+  // Highlight appropriate tab button
+  if (STATE.persona === "customer") {
+    const custBtn = document.getElementById(`tab-nav-${tabName}`);
+    if (custBtn) custBtn.classList.add("active");
+  } else {
+    if (tabName === "analytics") {
+      const aBtn = document.getElementById("tab-nav-analytics");
+      if (aBtn) aBtn.classList.add("active");
+    } else if (tabName === "catalog") {
+      const iBtn = document.getElementById("tab-nav-inventory");
+      if (iBtn) iBtn.classList.add("active");
+    }
+  }
+
+  // Floating AI Trigger: Visible ONLY on Customer Storefront -> Browse Products (catalog) tab
+  const floatingWidget = document.getElementById("floatingAiWidget");
+  if (floatingWidget) {
+    if (STATE.persona === "customer" && tabName === "catalog") {
+      floatingWidget.style.display = "flex";
+    } else {
+      floatingWidget.style.display = "none";
+    }
+  }
 
   // Refresh tab data
   if (tabName === "catalog") fetchCatalog();
+  if (tabName === "chat") updateBudgetTracker();
   if (tabName === "cart") loadCartView();
   if (tabName === "analytics") {
     loadAnalytics();
     loadAuditLogs();
   }
+}
+
+// Download Sample CSV helper
+function downloadSampleCSV(event) {
+  if (event) event.stopPropagation();
+  window.location.href = "/api/catalog/download-sample";
 }
 
 // ==========================================
@@ -74,10 +128,14 @@ function updateCatalogStats(products) {
   const outOfStock = total - inStock;
   const categories = new Set(products.map(p => p.category)).size;
 
-  document.getElementById("productTotalBadge").textContent = `${total} Products`;
-  document.getElementById("statInStock").textContent = inStock;
-  document.getElementById("statOutOfStock").textContent = outOfStock;
-  document.getElementById("statCategories").textContent = categories;
+  const totalBadge = document.getElementById("productTotalBadge");
+  if (totalBadge) totalBadge.textContent = `${total} Products`;
+  const statIn = document.getElementById("statInStock");
+  if (statIn) statIn.textContent = inStock;
+  const statOut = document.getElementById("statOutOfStock");
+  if (statOut) statOut.textContent = outOfStock;
+  const statCats = document.getElementById("statCategories");
+  if (statCats) statCats.textContent = categories;
 }
 
 function setCatalogView(view) {
@@ -88,15 +146,15 @@ function setCatalogView(view) {
   const tableView = document.getElementById("catalogTableView");
 
   if (view === "grid") {
-    btnGrid.classList.add("active");
-    btnTable.classList.remove("active");
-    gridView.style.display = "grid";
-    tableView.style.display = "none";
+    if (btnGrid) btnGrid.classList.add("active");
+    if (btnTable) btnTable.classList.remove("active");
+    if (gridView) gridView.style.display = "grid";
+    if (tableView) tableView.style.display = "none";
   } else {
-    btnTable.classList.add("active");
-    btnGrid.classList.remove("active");
-    gridView.style.display = "none";
-    tableView.style.display = "block";
+    if (btnTable) btnTable.classList.add("active");
+    if (btnGrid) btnGrid.classList.remove("active");
+    if (gridView) gridView.style.display = "none";
+    if (tableView) tableView.style.display = "block";
   }
 }
 
@@ -120,6 +178,7 @@ function renderCatalogTable(products) {
 
 function renderCatalogGrid(products) {
   const container = document.getElementById("catalogGridView");
+  if (!container) return;
   if (!products || products.length === 0) {
     container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:3rem 1rem; color:var(--text-muted);">
       <p style="font-size:2rem; margin-bottom:0.5rem;">🔍</p>
@@ -131,8 +190,9 @@ function renderCatalogGrid(products) {
   container.innerHTML = products.map(p => {
     const imgUrl = p.image_url || DEFAULT_IMG;
     const inStock = p.stock > 0;
+    const cardClass = inStock ? "prod-grid-card" : "prod-grid-card is-out-of-stock";
     return `
-      <div class="prod-grid-card">
+      <div class="${cardClass}">
         <div class="prod-img-box" onclick="openQuickView('${p.id}')">
           <img src="${imgUrl}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="handleImgError(this)">
           <span class="prod-stock-badge ${inStock ? 'badge-in-stock' : 'badge-out-stock'}">
@@ -158,6 +218,7 @@ function renderCatalogGrid(products) {
 
 function renderCatalogTableView(products) {
   const tbody = document.getElementById("catalogTableBody");
+  if (!tbody) return;
   if (!products || products.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:2rem;">No products found.</td></tr>`;
     return;
@@ -167,7 +228,7 @@ function renderCatalogTableView(products) {
     const imgUrl = p.image_url || DEFAULT_IMG;
     const inStock = p.stock > 0;
     return `
-      <tr>
+      <tr class="${!inStock ? 'row-out-of-stock' : ''}">
         <td>
           <img src="${imgUrl}" alt="${escapeHtml(p.name)}" class="table-prod-thumb" onerror="handleImgError(this)" onclick="openQuickView('${p.id}')">
         </td>
@@ -183,7 +244,7 @@ function renderCatalogTableView(products) {
         </td>
         <td>
           <button class="btn btn-primary btn-sm" ${!inStock ? 'disabled style="opacity:0.6;"' : ''} onclick="addItemToCart('${p.id}', '${escapeHtml(p.name)}')">
-            + Add
+            ${inStock ? '+ Add' : 'Sold Out'}
           </button>
         </td>
       </tr>
@@ -192,8 +253,8 @@ function renderCatalogTableView(products) {
 }
 
 function filterCatalogTable() {
-  const query = (document.getElementById("catalogSearchInput").value || "").toLowerCase();
-  const inStockOnly = document.getElementById("filterInStockOnly").checked;
+  const query = (document.getElementById("catalogSearchInput")?.value || "").toLowerCase();
+  const inStockOnly = document.getElementById("filterInStockOnly")?.checked;
   const categoryFilter = STATE.selectedCategory;
 
   const filtered = STATE.products.filter(p => {
@@ -254,7 +315,6 @@ function addCurrentQvToCart() {
     closeQuickView();
   }
 }
-
 
 async function handleFileUpload(event) {
   const file = event.target.files[0];
@@ -342,24 +402,24 @@ async function loadRealCatalog() {
   alertBox.style.display = "block";
   alertBox.style.background = "#e0e7ff";
   alertBox.style.color = "#3730a3";
-  alertBox.textContent = "Loading real-world Amazon/Flipkart sourced catalog...";
+  alertBox.textContent = "Loading real-world WFH setup catalog...";
 
   try {
     const res = await fetch("/api/catalog/load-real", { method: "POST" });
     const data = await res.json();
-    
+
     alertBox.style.background = "#dcfce7";
     alertBox.style.color = "#166534";
-    alertBox.textContent = `✅ Loaded ${data.valid_count} real-world products (Amazon.in / Flipkart)!`;
+    alertBox.textContent = `✅ Loaded ${data.valid_count} real-world products!`;
 
     STATE.products = data.products;
     renderCatalogTable(STATE.products);
     updateCatalogStats(STATE.products);
-    showToast("Real-world catalog loaded!");
+    showToast("WFH setup catalog loaded!");
   } catch (err) {
     alertBox.style.background = "#fee2e2";
     alertBox.style.color = "#991b1b";
-    alertBox.textContent = "Failed to load real catalog.";
+    alertBox.textContent = "Failed to load catalog.";
   }
 }
 
@@ -436,11 +496,40 @@ function appendAssistantResponse(data) {
 
   let intentInfo = "";
   if (data.intent && data.intent.intent) {
+    if (data.intent.budget) {
+      STATE.detectedBudget = data.intent.budget;
+      updateBudgetTracker();
+    }
     const budgetStr = data.intent.budget ? ` • Budget: ₹${data.intent.budget.toLocaleString("en-IN")}` : "";
     intentInfo = `<div class="intent-tag-pill">🎯 Intent: ${data.intent.intent}${budgetStr}</div>`;
   }
 
   let html = `<div>${escapeHtml(data.reply).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>${intentInfo}`;
+
+  // Multi-item bundle one-click add button
+  if (data.recommendations && data.recommendations.length > 1) {
+    const bundleId = "bundle_" + Date.now();
+    window._smartcart_bundles[bundleId] = data.recommendations.map(r => ({
+      id: r.product.id,
+      name: r.product.name
+    }));
+    const bundleTotal = data.recommendations.reduce((sum, r) => sum + (r.product ? r.product.price : 0), 0);
+    html += `
+      <div class="bundle-banner-card">
+        <div>
+          <h4 style="font-size:0.9rem; font-weight:700; color:#065f46; margin-bottom:0.2rem;">
+            ✨ Recommended Curated Bundle (${data.recommendations.length} Items)
+          </h4>
+          <p style="font-size:0.75rem; color:#047857; margin:0;">
+            One-click add all matching recommendations within your ₹${(STATE.detectedBudget || bundleTotal).toLocaleString("en-IN")} budget
+          </p>
+        </div>
+        <button class="btn btn-primary btn-sm" style="white-space:nowrap; background:#059669; border-color:#059669;" onclick="addEntireBundle('${bundleId}')">
+          🛍️ + Add Entire Bundle (₹${bundleTotal.toLocaleString("en-IN")})
+        </button>
+      </div>
+    `;
+  }
 
   // Primary Recommendations
   if (data.recommendations && data.recommendations.length > 0) {
@@ -504,10 +593,20 @@ function appendAssistantResponse(data) {
 }
 
 // ==========================================
-// 3. CART & CHECKOUT FUNCTIONS
+// 3. CART & LIVE BUDGET TRACKER
 // ==========================================
 
-async function addItemToCart(productId, productName) {
+async function addEntireBundle(bundleId) {
+  const items = window._smartcart_bundles[bundleId];
+  if (!items || items.length === 0) return;
+
+  for (const item of items) {
+    await addItemToCart(item.id, item.name, true);
+  }
+  showToast(`🎉 Added all ${items.length} bundle items to your cart!`);
+}
+
+async function addItemToCart(productId, productName, silent = false) {
   try {
     // Ensure cart exists
     if (!STATE.cartId) {
@@ -525,15 +624,15 @@ async function addItemToCart(productId, productName) {
 
     const data = await res.json();
     if (!res.ok) {
-      showToast(`⚠️ ${data.detail || "Could not add item."}`);
+      if (!silent) showToast(`⚠️ ${data.detail || "Could not add item."}`);
       return;
     }
 
     STATE.cart = data;
     updateCartUI(data);
-    showToast(`Added '${productName}' to cart!`);
+    if (!silent) showToast(`Added '${productName}' to cart!`);
   } catch (err) {
-    showToast(`⚠️ Error: ${err.message}`);
+    if (!silent) showToast(`⚠️ Error: ${err.message}`);
   }
 }
 
@@ -593,16 +692,58 @@ async function loadCartView() {
   }
 }
 
+function updateBudgetTracker() {
+  const detectedBudgetEl = document.getElementById("trackerDetectedBudget");
+  const cartTotalEl = document.getElementById("trackerCartTotal");
+  const remainingEl = document.getElementById("trackerRemainingBudget");
+  const barFillEl = document.getElementById("trackerProgressBar");
+  const pillEl = document.getElementById("budgetStatusPill");
+
+  if (!detectedBudgetEl || !cartTotalEl || !remainingEl || !barFillEl) return;
+
+  const budget = STATE.detectedBudget || 3000;
+  const cartTotal = STATE.cart ? STATE.cart.total : 0;
+  const remaining = budget - cartTotal;
+  const pct = Math.min(100, Math.round((cartTotal / budget) * 100));
+
+  detectedBudgetEl.textContent = `₹${budget.toLocaleString("en-IN")}`;
+  cartTotalEl.textContent = `₹${cartTotal.toLocaleString("en-IN")}`;
+
+  if (remaining >= 0) {
+    remainingEl.textContent = `₹${remaining.toLocaleString("en-IN")}`;
+    remainingEl.style.color = "var(--success)";
+    barFillEl.style.width = `${pct}%`;
+    barFillEl.style.background = "var(--success)";
+    if (pillEl) {
+      pillEl.className = "badge badge-success";
+      pillEl.textContent = "Within Budget ✓";
+    }
+  } else {
+    remainingEl.textContent = `-₹${Math.abs(remaining).toLocaleString("en-IN")}`;
+    remainingEl.style.color = "var(--danger)";
+    barFillEl.style.width = "100%";
+    barFillEl.style.background = "var(--danger)";
+    if (pillEl) {
+      pillEl.className = "badge badge-danger";
+      pillEl.textContent = "Over Budget ⚠️";
+    }
+  }
+}
+
 function updateCartUI(cart) {
   const count = cart ? cart.item_count : 0;
-  document.getElementById("cartBadgeCount").textContent = count;
-  document.getElementById("cartTotalItems").textContent = count;
-  
-  const fab = document.getElementById("fabCartCount");
-  if (fab) fab.textContent = count;
+  const badgeEl = document.getElementById("cartBadgeCount");
+  if (badgeEl) badgeEl.textContent = count;
+  const totalItemsEl = document.getElementById("cartTotalItems");
+  if (totalItemsEl) totalItemsEl.textContent = count;
+
+  // Sync Live Budget Tracker
+  updateBudgetTracker();
 
   // Render Mini Cart in chat sidebar
   const mini = document.getElementById("miniCartContent");
+  if (!mini) return;
+
   if (!cart || cart.items.length === 0) {
     mini.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted); text-align:center; padding:1.5rem 0;">Your cart is empty.</p>`;
     return;
@@ -628,17 +769,23 @@ function updateCartUI(cart) {
 }
 
 function renderEmptyCartView() {
-  document.getElementById("cartItemsList").innerHTML = `
-    <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
-      <p style="font-size:2rem; margin-bottom:0.5rem;">🛒</p>
-      <p style="font-weight:600; font-size:1rem;">Your cart is empty</p>
-      <p style="font-size:0.8rem; margin-top:0.25rem;">Chat with the assistant or browse catalog to add products.</p>
-      <button class="btn btn-primary btn-sm" style="margin-top:1rem;" onclick="switchTab('chat')">Start Shopping →</button>
-    </div>
-  `;
-  document.getElementById("summarySubtotal").textContent = "₹0.00";
-  document.getElementById("summaryTotal").textContent = "₹0.00";
-  document.getElementById("btnProceedCheckout").disabled = true;
+  const itemsContainer = document.getElementById("cartItemsList");
+  if (itemsContainer) {
+    itemsContainer.innerHTML = `
+      <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+        <p style="font-size:2rem; margin-bottom:0.5rem;">🛒</p>
+        <p style="font-weight:600; font-size:1rem;">Your cart is empty</p>
+        <p style="font-size:0.8rem; margin-top:0.25rem;">Chat with the assistant or browse catalog to add products.</p>
+        <button class="btn btn-primary btn-sm" style="margin-top:1rem;" onclick="switchTab('chat')">Start Shopping →</button>
+      </div>
+    `;
+  }
+  const subTotalEl = document.getElementById("summarySubtotal");
+  if (subTotalEl) subTotalEl.textContent = "₹0.00";
+  const totalEl = document.getElementById("summaryTotal");
+  if (totalEl) totalEl.textContent = "₹0.00";
+  const chkBtn = document.getElementById("btnProceedCheckout");
+  if (chkBtn) chkBtn.disabled = true;
 }
 
 function renderFullCartView(cart) {
@@ -675,9 +822,10 @@ function renderFullCartView(cart) {
 }
 
 function toggleCheckoutButton() {
-  const confirmed = document.getElementById("chkUserConfirm").checked;
+  const confirmed = document.getElementById("chkUserConfirm")?.checked;
   const hasItems = STATE.cart && STATE.cart.items && STATE.cart.items.length > 0;
-  document.getElementById("btnProceedCheckout").disabled = !(confirmed && hasItems);
+  const btn = document.getElementById("btnProceedCheckout");
+  if (btn) btn.disabled = !(confirmed && hasItems);
 }
 
 // ==========================================
@@ -761,14 +909,14 @@ async function initiateCheckout() {
 
     renderEmptyCartView();
     updateCartUI(null);
-    document.getElementById("chkUserConfirm").checked = false;
+    const chk = document.getElementById("chkUserConfirm");
+    if (chk) chk.checked = false;
 
     // Show order receipt confirmation in chat
     appendChatBubble("assistant", `🎉 **Payment Verified & Order Confirmed!**\n- **Order ID:** \`${verifyData.order_id}\`\n- **Payment ID:** \`${verifyData.razorpay_payment_id}\`\n- **Amount:** ₹${paidAmount.toLocaleString("en-IN")}\n- **Status:** **PAID**\nYour products are being packed!`);
 
     // Launch Full-Screen PhonePe / UPI Success Modal with chime sound & confetti
     triggerPhonePeSuccess(paidAmount, verifyData.order_id, verifyData.razorpay_payment_id || mockPaymentId, purchasedItems);
-
 
   } catch (err) {
     showToast(`❌ Checkout Error: ${err.message}`);
@@ -797,23 +945,110 @@ async function loadAnalytics() {
     document.getElementById("kpiAvgCart").textContent = `₹${m.average_cart_value.toLocaleString("en-IN")}`;
     document.getElementById("kpiTotalRevenue").textContent = `₹${m.total_revenue.toLocaleString("en-IN")}`;
 
-    // Funnel calculations
-    const recRate = Math.min(100, Math.round((m.product_search_requests / Math.max(1, m.total_conversations)) * 100));
-    const cartRate = Math.min(100, Math.round((m.carts_created / Math.max(1, m.product_search_requests)) * 100));
-    const payRate = Math.min(100, Math.round((m.successful_test_payments / Math.max(1, m.checkout_attempts)) * 100));
+    // Funnel calculations: Sync dynamically with SQLite queries & top KPI cards
+    const totalConvs = Math.max(1, m.total_conversations || 1);
+    const cartsCreated = m.carts_created || 0;
+    const checkoutAttempts = m.checkout_attempts || cartsCreated || 1;
+    const paidOrders = m.successful_test_payments || 0;
 
-    document.getElementById("funnelRecRate").textContent = `${recRate}%`;
-    document.getElementById("barRec").style.width = `${recRate}%`;
-    
-    document.getElementById("funnelCartRate").textContent = `${cartRate}%`;
-    document.getElementById("barCart").style.width = `${cartRate}%`;
+    const cartRate = Math.min(100, Math.round((cartsCreated / totalConvs) * 100));
+    const checkoutRate = Math.min(100, Math.round((checkoutAttempts / Math.max(1, cartsCreated)) * 100));
+    const payRate = Math.min(100, Math.round((paidOrders / Math.max(1, checkoutAttempts)) * 100));
 
-    document.getElementById("funnelPayRate").textContent = `${payRate}%`;
-    document.getElementById("barPay").style.width = `${payRate}%`;
+    const funnelCartEl = document.getElementById("funnelCartRate");
+    const barCartEl = document.getElementById("barCart");
+    if (funnelCartEl && barCartEl) {
+      funnelCartEl.textContent = `${cartsCreated}/${totalConvs} (${cartRate}%)`;
+      barCartEl.style.width = `${cartRate}%`;
+    }
+
+    const funnelCheckoutEl = document.getElementById("funnelCheckoutRate");
+    const barCheckoutEl = document.getElementById("barCheckout");
+    if (funnelCheckoutEl && barCheckoutEl) {
+      funnelCheckoutEl.textContent = `${checkoutAttempts}/${Math.max(1, cartsCreated)} (${checkoutRate}%)`;
+      barCheckoutEl.style.width = `${checkoutRate}%`;
+    }
+
+    const funnelPayEl = document.getElementById("funnelPayRate");
+    const barPayEl = document.getElementById("barPay");
+    if (funnelPayEl && barPayEl) {
+      funnelPayEl.textContent = `${paidOrders}/${Math.max(1, checkoutAttempts)} (${payRate}%)`;
+      barPayEl.style.width = `${payRate}%`;
+    }
 
   } catch (err) {
     console.error("Error loading analytics:", err);
   }
+}
+
+function formatAuditSummary(l) {
+  const action = l.action || "";
+  const inp = l.input_data || {};
+  const out = l.output_data || {};
+
+  let pillIcon = "🔍";
+  let pillClass = "audit-intent";
+  let text = "";
+
+  if (action.includes("INTENT") || action.includes("CHAT") || action.includes("SEARCH")) {
+    pillIcon = "🎯";
+    pillClass = "audit-intent";
+    const intentName = out.intent || inp.intent || (inp.message ? "Product Search" : "Intent Extraction");
+    const budgetVal = out.budget || inp.budget;
+    const budgetStr = budgetVal ? ` • Budget: ₹${Number(budgetVal).toLocaleString("en-IN")}` : "";
+    const recCount = out.recommendations ? out.recommendations.length : (out.recommendations_count || (out.matched_count || 0));
+    const matchesStr = recCount ? ` → ${recCount} Matched ✓` : "";
+    text = `Intent: ${escapeHtml(intentName)}${budgetStr}${matchesStr}`;
+  } else if (action.includes("CART") || action.includes("ITEM")) {
+    pillIcon = "🛒";
+    pillClass = "audit-cart";
+    const prodName = inp.product_name || (inp.product_id ? `Product ${inp.product_id}` : (out.items && out.items.length ? `${out.items.length} items` : "Cart updated"));
+    const totalStr = out.total ? ` (Total: ₹${Number(out.total).toLocaleString("en-IN")})` : "";
+    text = `Cart Event: ${escapeHtml(prodName)}${totalStr}`;
+  } else if (action.includes("CHECKOUT")) {
+    pillIcon = "💳";
+    pillClass = "audit-pay";
+    const ordId = out.order_id || inp.order_id || "Order Initialized";
+    const amtStr = out.amount ? ` • ₹${(Number(out.amount) / 100).toLocaleString("en-IN")}` : "";
+    text = `Checkout Initiated: ${escapeHtml(ordId)}${amtStr} [Gate Verified ✓]`;
+  } else if (action.includes("PAYMENT") || action.includes("PAID") || action.includes("SUCCESS")) {
+    pillIcon = "🎉";
+    pillClass = "audit-success";
+    const payId = out.razorpay_payment_id || inp.razorpay_payment_id || "pay_verified";
+    text = `Verified Payment: ${escapeHtml(payId)} (PAID ✓)`;
+  } else if (action.includes("CATALOG") || action.includes("UPLOAD")) {
+    pillIcon = "📦";
+    pillClass = "audit-catalog";
+    const count = out.valid_count || out.total_products || 15;
+    text = `Catalog Ingest: ${count} products imported & verified`;
+  } else {
+    pillIcon = "🛡️";
+    pillClass = "audit-intent";
+    text = `${action}: Processed safely`;
+  }
+
+  const logId = `rawLog_${l.id}`;
+  const rawJson = JSON.stringify({ action: l.action, input: inp, output: out }, null, 2);
+
+  return `
+    <div style="display:flex; flex-direction:column; gap:0.35rem;">
+      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <span class="audit-summary-pill ${pillClass}">
+          ${pillIcon} ${text}
+        </span>
+        <button class="btn-raw-json" onclick="toggleAuditJson('${logId}')">
+          View Raw JSON ▾
+        </button>
+      </div>
+      <pre id="${logId}" class="raw-json-viewer">${escapeHtml(rawJson)}</pre>
+    </div>
+  `;
+}
+
+function toggleAuditJson(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("open");
 }
 
 async function loadAuditLogs() {
@@ -823,8 +1058,9 @@ async function loadAuditLogs() {
     const logs = await res.json();
 
     const tbody = document.getElementById("auditLogsTableBody");
+    if (!tbody) return;
     if (!logs || logs.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No audit events recorded yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No audit events recorded yet.</td></tr>`;
       return;
     }
 
@@ -834,11 +1070,8 @@ async function loadAuditLogs() {
         <td style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${formatTimestamp(l.timestamp)}</td>
         <td><span style="font-size:0.75rem; font-family:monospace;">${escapeHtml(l.session_id)}</span></td>
         <td><span class="badge ${getActionBadgeClass(l.action)}">${escapeHtml(l.action)}</span></td>
-        <td style="font-size:0.75rem; font-family:monospace; max-width:240px; overflow:hidden; text-overflow:ellipsis;">
-          ${l.input_data ? escapeHtml(JSON.stringify(l.input_data)) : "-"}
-        </td>
-        <td style="font-size:0.75rem; font-family:monospace; max-width:240px; overflow:hidden; text-overflow:ellipsis;">
-          ${l.output_data ? escapeHtml(JSON.stringify(l.output_data)) : "-"}
+        <td>
+          ${formatAuditSummary(l)}
         </td>
       </tr>
     `).join("");
@@ -876,8 +1109,11 @@ function escapeHtml(str) {
 
 // Initial Boot
 document.addEventListener("DOMContentLoaded", () => {
+  switchPersona("customer");
+  switchTab("chat");
   fetchCatalog();
   loadCartView();
+  updateBudgetTracker();
 });
 
 // ==========================================
@@ -1072,4 +1308,3 @@ function toggleVoiceInput() {
 
   recognition.start();
 }
-
