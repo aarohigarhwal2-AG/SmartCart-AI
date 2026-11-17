@@ -48,7 +48,11 @@ if FRONTEND_DIR.exists():
 
     @app.get("/", include_in_schema=False)
     async def serve_index():
-        return FileResponse(str(FRONTEND_DIR / "index.html"))
+        response = FileResponse(str(FRONTEND_DIR / "index.html"))
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
 @app.on_event("startup")
 def on_startup():
